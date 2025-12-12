@@ -53,7 +53,7 @@ workflow_status:
         name: "Product Requirements Document"
         agent: "pm"
         command: "/bmad:bmm:workflows:create-prd"
-        status: "required"
+        status: "docs/prd.md"
         output: "Product Requirements Document with FRs and NFRs"
 
       - id: "create-ux-design"
@@ -71,7 +71,7 @@ workflow_status:
         name: "Architecture Document"
         agent: "architect"
         command: "/bmad:bmm:workflows:create-architecture"
-        status: "required"
+        status: "docs/architecture.md"
         output: "System architecture document"
 
       - id: "create-epics-and-stories"
