@@ -88,6 +88,13 @@ workflow_status:
         status: "docs/test-design-system.md"
         output: "System-level testability review completed 2025-12-12"
 
+      - id: "test-framework"
+        name: "Test Framework Setup"
+        agent: "tea"
+        command: "/bmad:bmm:workflows:testarch-framework"
+        status: "tests/README.md"
+        output: "Jest + factories + mock backend scaffolded 2025-12-12"
+
       - id: "validate-architecture"
         name: "Validate Architecture"
         agent: "architect"
