@@ -11,17 +11,18 @@ import {
 } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { settingsReducer } from './slices';
+import { settingsReducer, authReducer } from './slices';
 
 export const rootReducer = combineReducers({
   settings: settingsReducer,
+  auth: authReducer,
   // Future slices: sessions, backends, queue
 });
 
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['settings'], // Add more slices as they're created
+  whitelist: ['settings'], // auth NOT included - Supabase handles session persistence
   // blacklist: ['backends'], // Credentials handled separately via secure store
 };
 
