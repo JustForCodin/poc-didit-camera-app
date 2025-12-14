@@ -4,7 +4,7 @@
  * Common utilities for testing React Native/Expo applications.
  */
 
-import { Result } from '@/types/common';
+import { Result } from '@/src/types/common';
 
 /**
  * Wait for a specified duration

@@ -26,8 +26,10 @@ module.exports = {
   },
 
   // Module path aliases (match tsconfig.json)
+  // tsconfig uses @/* and ~/* both mapping to project root
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/(.*)$': '<rootDir>/$1',
+    '^~/(.*)$': '<rootDir>/$1',
     '^@tests/(.*)$': '<rootDir>/tests/$1',
   },
 
@@ -82,9 +84,9 @@ module.exports = {
   // Verbose output for CI
   verbose: true,
 
-  // Transform ignore patterns (node_modules except Expo)
+  // Transform ignore patterns (node_modules except Expo and other ESM packages)
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|@faker-js/.*)',
   ],
 
   // Global setup/teardown
