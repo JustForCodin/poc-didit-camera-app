@@ -31,6 +31,12 @@ concurrency:
 env:
   NODE_VERSION: '25'
 
+# Required permissions for test reporting and PR checks
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   # ============================================
   # Stage 1: Lint - Code Quality Checks
@@ -116,7 +122,8 @@ jobs:
           name: Jest Tests
           path: test-results/junit.xml
           reporter: jest-junit
-          fail-on-error: true
+          fail-on-error: false
+        continue-on-error: true  # Don't fail pipeline if reporter lacks permissions
 
   # ============================================
   # Stage 3: Burn-in - Flaky Test Detection
