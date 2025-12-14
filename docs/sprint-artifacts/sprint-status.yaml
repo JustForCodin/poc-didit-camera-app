@@ -42,13 +42,13 @@ story_location: docs/sprint-artifacts
 
 development_status:
   # Epic 1: Project Foundation & Core Infrastructure
-  epic-1: in-progress
+  epic-1: done
   1-1-project-initialization-with-expo-stack: done
   1-2-redux-toolkit-styled-components-setup: done
   1-3-tab-navigation-structure: done
   1-4-supabase-client-anonymous-authentication: done
   1-5-backend-abstraction-layer-foundation: done
-  1-6-secure-credential-storage: backlog
+  1-6-secure-credential-storage: done
   epic-1-retrospective: optional
 
   # Epic 2: Camera Capture & Recording
