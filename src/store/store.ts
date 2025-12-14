@@ -11,11 +11,12 @@ import {
 } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { settingsReducer, authReducer } from './slices';
+import { settingsReducer, authReducer, recordingReducer } from './slices';
 
 export const rootReducer = combineReducers({
   settings: settingsReducer,
   auth: authReducer,
+  recording: recordingReducer,
   // Future slices: sessions, backends, queue
 });
 
