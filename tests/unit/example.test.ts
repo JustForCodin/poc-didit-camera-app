@@ -131,7 +131,8 @@ describe('Test Infrastructure', () => {
       await mockBackend.analyze({}, 'test');
       const duration = Date.now() - start;
 
-      expect(duration).toBeGreaterThanOrEqual(50);
+      // Allow 5ms tolerance for timer precision in CI environments
+      expect(duration).toBeGreaterThanOrEqual(45);
     });
 
     it('should be configurable', () => {
