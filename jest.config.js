@@ -68,6 +68,12 @@ module.exports = {
       lines: 90,
       statements: 90,
     },
+    'src/services/camera/**/*.ts': {
+      branches: 90,
+      functions: 90,
+      lines: 90,
+      statements: 90,
+    },
   },
 
   // Coverage reporters
