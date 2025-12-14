@@ -10,7 +10,7 @@
  */
 
 import React, { useRef, useEffect, useState } from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { CameraView, CameraType } from 'expo-camera';
 import styled from 'styled-components/native';
 
@@ -46,6 +46,7 @@ export function CameraPreview({
   onMountError,
   testID = 'camera-preview',
 }: CameraPreviewProps) {
+  // Camera ref for future frame capture (Story 2.4: Frame Capture at Configurable Intervals)
   const cameraRef = useRef<CameraView>(null);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [hasError, setHasError] = useState(false);

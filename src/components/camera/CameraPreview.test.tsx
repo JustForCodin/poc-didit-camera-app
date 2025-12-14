@@ -2,10 +2,13 @@
  * CameraPreview Component Tests
  *
  * Tests for the camera preview component.
- * Note: These are unit tests for the component interface and props.
- * Visual/integration tests should be done on device.
+ * Includes type/interface tests and render behavior tests.
  */
 
+import React from 'react';
+import { render } from '@testing-library/react-native';
+import { ThemeProvider } from 'styled-components/native';
+import { theme } from '@/src/theme';
 import { CameraPreview, CameraPreviewProps } from './CameraPreview';
 
 // Mock expo-camera module
@@ -16,6 +19,11 @@ jest.mock('expo-camera', () => ({
     front: 'front',
   },
 }));
+
+// Helper to render with theme
+const renderWithTheme = (component: React.ReactElement) => {
+  return render(<ThemeProvider theme={theme}>{component}</ThemeProvider>);
+};
 
 describe('CameraPreview', () => {
   beforeEach(() => {
@@ -147,5 +155,57 @@ describe('CameraPreview integration', () => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const cameraModule = require('./index');
     expect(cameraModule.CameraPreview).toBeDefined();
+  });
+});
+
+describe('CameraPreview rendering', () => {
+  it('should render with default testID', () => {
+    const { getByTestId } = renderWithTheme(<CameraPreview />);
+    expect(getByTestId('camera-preview')).toBeTruthy();
+  });
+
+  it('should render with custom testID', () => {
+    const { getByTestId } = renderWithTheme(
+      <CameraPreview testID="custom-camera" />
+    );
+    expect(getByTestId('custom-camera')).toBeTruthy();
+  });
+
+  it('should show "Camera Paused" when inactive', () => {
+    const { getByText } = renderWithTheme(<CameraPreview isActive={false} />);
+    expect(getByText('Camera Paused')).toBeTruthy();
+  });
+
+  it('should show loading text when active and camera not ready', () => {
+    const { getByText } = renderWithTheme(<CameraPreview isActive={true} />);
+    expect(getByText('Initializing camera...')).toBeTruthy();
+  });
+
+  it('should render CameraView when active', () => {
+    const { UNSAFE_getByType } = renderWithTheme(
+      <CameraPreview isActive={true} />
+    );
+    // CameraView is mocked as a string, so we check the mock was used
+    expect(UNSAFE_getByType('CameraView' as any)).toBeTruthy();
+  });
+
+  it('should not render CameraView when inactive', () => {
+    const { queryByText } = renderWithTheme(<CameraPreview isActive={false} />);
+    expect(queryByText('Camera Paused')).toBeTruthy();
+    // CameraView should not be rendered
+  });
+
+  it('should render with rear camera by default', () => {
+    const { UNSAFE_getByType } = renderWithTheme(<CameraPreview />);
+    const cameraView = UNSAFE_getByType('CameraView' as any);
+    expect(cameraView.props.facing).toBe('back');
+  });
+
+  it('should render with front camera when specified', () => {
+    const { UNSAFE_getByType } = renderWithTheme(
+      <CameraPreview facing="front" />
+    );
+    const cameraView = UNSAFE_getByType('CameraView' as any);
+    expect(cameraView.props.facing).toBe('front');
   });
 });
