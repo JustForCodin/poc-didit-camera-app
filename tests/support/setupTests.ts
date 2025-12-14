@@ -10,10 +10,41 @@
 // TODO: Re-enable when @testing-library/jest-native supports React 19
 // import '@testing-library/jest-native/extend-expect';
 
-// Mock AsyncStorage (installed in Story 1.1)
-jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
-);
+// Mock AsyncStorage with complete promise-returning implementation
+// This ensures redux-persist doesn't crash after tests complete
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn().mockResolvedValue(null),
+    setItem: jest.fn().mockResolvedValue(undefined),
+    removeItem: jest.fn().mockResolvedValue(undefined),
+    mergeItem: jest.fn().mockResolvedValue(undefined),
+    clear: jest.fn().mockResolvedValue(undefined),
+    getAllKeys: jest.fn().mockResolvedValue([]),
+    multiGet: jest.fn().mockResolvedValue([]),
+    multiSet: jest.fn().mockResolvedValue(undefined),
+    multiRemove: jest.fn().mockResolvedValue(undefined),
+    multiMerge: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
+// Mock redux-persist to avoid async storage issues in tests
+jest.mock('redux-persist', () => {
+  const actual = jest.requireActual('redux-persist');
+  return {
+    ...actual,
+    persistStore: jest.fn(() => ({
+      pause: jest.fn(),
+      persist: jest.fn(),
+      purge: jest.fn().mockResolvedValue(undefined),
+      flush: jest.fn().mockResolvedValue(undefined),
+      dispatch: jest.fn(),
+      getState: jest.fn(),
+      subscribe: jest.fn(() => jest.fn()),
+    })),
+    persistReducer: jest.fn((_config, reducer) => reducer),
+  };
+});
 
 // TODO: Uncomment when @react-native-community/netinfo is installed (Story 1.2+)
 // jest.mock('@react-native-community/netinfo', () => ({
@@ -110,4 +141,12 @@ global.console = {
 // Cleanup after each test
 afterEach(() => {
   jest.clearAllMocks();
+});
+
+// Flush pending timers and cleanup redux-persist after all tests
+afterAll(async () => {
+  // Clear all pending timers to prevent redux-persist from trying to write
+  jest.useRealTimers();
+  // Give a moment for any pending promises to settle
+  await new Promise((resolve) => setTimeout(resolve, 100));
 });
