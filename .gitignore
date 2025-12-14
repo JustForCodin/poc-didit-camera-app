@@ -44,3 +44,4 @@ expo-env.d.ts
 
 # Testing
 coverage/
+test-results/
