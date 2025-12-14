@@ -32,6 +32,11 @@ export const CREDENTIAL_KEYS = {
 
 /**
  * User-friendly error messages for storage errors
+ *
+ * @remarks
+ * Some error codes are reserved for future platform-specific error handling:
+ * - `unavailable`: For when secure storage is not supported on the device
+ * - `invalid_key`: For runtime key validation (currently enforced by TypeScript)
  */
 export const STORAGE_ERROR_MESSAGES: Record<string, string> = {
   unavailable: 'Secure storage is not available on this device.',
@@ -85,6 +90,11 @@ export async function getCredential(
  * @param key - The credential key to store under
  * @param value - The credential value to store (will be encrypted)
  * @returns Result indicating success or failure
+ *
+ * @remarks
+ * Empty string values are accepted and stored. Use `deleteCredential` to remove
+ * a credential entirely, or check with `hasCredential` which returns false for
+ * null values but true for empty strings.
  *
  * @example
  * const result = await setCredential(CREDENTIAL_KEYS.GEMINI, 'my-api-key');

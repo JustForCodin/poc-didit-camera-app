@@ -31,7 +31,8 @@ So that my credentials are protected and persist across app sessions.
   - [x] 2.4: Implement `setCredential(key: string, value: string): Promise<Result<void>>`
   - [x] 2.5: Implement `deleteCredential(key: string): Promise<Result<void>>`
   - [x] 2.6: Implement `hasCredential(key: string): Promise<Result<boolean>>` helper
-  - [x] 2.7: Export all functions from index.ts barrel
+  - [x] 2.7: Implement `clearAllCredentials(): Promise<Result<void>>` utility
+  - [x] 2.8: Export all functions from index.ts barrel
 - [x] Task 3: Implement credential key management (AC: #1, #3)
   - [x] 3.1: Define `CredentialKey` type for valid credential keys
   - [x] 3.2: Define keys: `'diditCamera_apiKey'`, `'gemini_apiKey'`, `'claude_apiKey'`
