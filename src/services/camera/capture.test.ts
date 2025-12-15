@@ -34,6 +34,15 @@ describe('capture service', () => {
   let mockConsoleError: jest.SpyInstance;
   let mockConsoleLog: jest.SpyInstance;
 
+  // Helper to advance timers and flush all promises
+  const advanceTimersAndFlush = async (ms: number) => {
+    jest.advanceTimersByTime(ms);
+    // Flush microtask queue multiple times for nested async operations
+    for (let i = 0; i < 10; i++) {
+      await Promise.resolve();
+    }
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
@@ -278,8 +287,7 @@ describe('capture service', () => {
         await service.startCapture({ maxFrames: 0 });
 
         // Fast-forward to capture frame
-        jest.advanceTimersByTime(1000);
-        await Promise.resolve();
+        await advanceTimersAndFlush(1000);
 
         // Should stop after 1 frame (clamped minimum)
         expect(service.getFrameCount()).toBe(1);
@@ -391,8 +399,7 @@ describe('capture service', () => {
 
         // Capture 3 frames
         for (let i = 0; i < 3; i++) {
-          jest.advanceTimersByTime(1000);
-          await Promise.resolve();
+          await advanceTimersAndFlush(1000);
         }
 
         expect(mockTakePicture).toHaveBeenCalledTimes(3);
@@ -400,14 +407,13 @@ describe('capture service', () => {
       });
 
       it('should include timestamp in captured frames', async () => {
-        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg', width: 1920, height: 1080 });
+        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg' });
         const mockRef = { current: { takePictureAsync: mockTakePicture } };
         service.setCameraRef(mockRef as any);
 
         await service.startCapture();
 
-        jest.advanceTimersByTime(1000);
-        await Promise.resolve();
+        await advanceTimersAndFlush(1000);
 
         const frames = service.getFrames();
         expect(frames[0].timestamp).toBeDefined();
@@ -424,8 +430,7 @@ describe('capture service', () => {
 
         // Capture 3 frames
         for (let i = 0; i < 3; i++) {
-          jest.advanceTimersByTime(1000);
-          await Promise.resolve();
+          await advanceTimersAndFlush(1000);
         }
 
         const frames = service.getFrames();
@@ -443,10 +448,8 @@ describe('capture service', () => {
 
         await service.startCapture();
 
-        jest.advanceTimersByTime(1000);
-        await Promise.resolve();
-        jest.advanceTimersByTime(1000);
-        await Promise.resolve();
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
 
         const frames = service.getFrames();
         expect(frames[0].uri).toBe('file://frame1.jpg');
@@ -458,10 +461,16 @@ describe('capture service', () => {
         const mockRef = { current: { takePictureAsync: mockTakePicture } };
         service.setCameraRef(mockRef as any);
 
+        // Ensure FileSystem mock is properly set
+        const FileSystem = require('expo-file-system');
+        FileSystem.getInfoAsync.mockResolvedValue({
+          exists: true,
+          size: 50000,
+        });
+
         await service.startCapture();
 
-        jest.advanceTimersByTime(1000);
-        await Promise.resolve();
+        await advanceTimersAndFlush(1000);
 
         const frames = service.getFrames();
         expect(frames[0].fileSize).toBe(50000);
@@ -478,8 +487,7 @@ describe('capture service', () => {
 
         await service.startCapture();
 
-        jest.advanceTimersByTime(1000);
-        await Promise.resolve();
+        await advanceTimersAndFlush(1000);
 
         const frames = service.getFrames();
         expect(frames.length).toBe(1);
@@ -512,8 +520,7 @@ describe('capture service', () => {
 
         // Capture 4 intervals worth
         for (let i = 0; i < 4; i++) {
-          jest.advanceTimersByTime(1000);
-          await Promise.resolve();
+          await advanceTimersAndFlush(1000);
         }
 
         // Should only have 3 frames
@@ -530,10 +537,9 @@ describe('capture service', () => {
         await service.startCapture({ maxFrames: 2 });
 
         // Capture until max
-        jest.advanceTimersByTime(2000);
-        await Promise.resolve();
-        jest.advanceTimersByTime(1000); // Try one more
-        await Promise.resolve();
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000); // Try one more
 
         expect(mockConsoleLog).toHaveBeenCalledWith(
           expect.stringContaining('Max frames reached: 2')
@@ -552,8 +558,7 @@ describe('capture service', () => {
 
         // Capture 3 frames
         for (let i = 0; i < 3; i++) {
-          jest.advanceTimersByTime(1000);
-          await Promise.resolve();
+          await advanceTimersAndFlush(1000);
         }
 
         // Should have 2 frames (1 failed)
@@ -618,8 +623,8 @@ describe('capture service', () => {
         await service.startCapture();
 
         // Capture some frames
-        jest.advanceTimersByTime(2000);
-        await Promise.resolve();
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
 
         const result = await service.stopCapture();
 
@@ -642,8 +647,9 @@ describe('capture service', () => {
 
         await service.startCapture();
 
-        jest.advanceTimersByTime(3000);
-        await Promise.resolve();
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
 
         const result = await service.stopCapture();
 
@@ -721,8 +727,8 @@ describe('capture service', () => {
 
         await service.startCapture();
 
-        jest.advanceTimersByTime(2000);
-        await Promise.resolve();
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
 
         await service.cancelCapture();
 
