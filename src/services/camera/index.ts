@@ -30,3 +30,20 @@ export type {
   RecordingOptions,
   RecordingResult,
 } from './recording';
+
+export {
+  FrameCaptureService,
+  frameCaptureService,
+  startCapture,
+  stopCapture,
+  isCapturing,
+  getCaptureState,
+  CAPTURE_ERROR_MESSAGES,
+  getCaptureErrorMessage,
+} from './capture';
+
+export type {
+  CaptureState,
+  CaptureOptions,
+  CapturedFrame,
+} from './capture';
