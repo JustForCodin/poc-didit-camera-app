@@ -53,15 +53,15 @@ workflow_status:
         name: "Product Requirements Document"
         agent: "pm"
         command: "/bmad:bmm:workflows:create-prd"
-        status: "required"
+        status: "docs/prd.md"
         output: "Product Requirements Document with FRs and NFRs"
 
       - id: "create-ux-design"
         name: "UX Design"
         agent: "ux-designer"
         command: "/bmad:bmm:workflows:create-ux-design"
-        status: "conditional"
-        note: "Determined after PRD - user/agent decides if needed"
+        status: "docs/ux-design-specification.md"
+        output: "UX Design Specification with patterns, principles, emotional design"
 
   # Phase 2: Solutioning
   - phase: 2
@@ -71,22 +71,36 @@ workflow_status:
         name: "Architecture Document"
         agent: "architect"
         command: "/bmad:bmm:workflows:create-architecture"
-        status: "required"
+        status: "docs/architecture.md"
         output: "System architecture document"
 
       - id: "create-epics-and-stories"
         name: "Epics and Stories"
         agent: "pm"
         command: "/bmad:bmm:workflows:create-epics-stories"
-        status: "required"
-        note: "Break down PRD into implementable epics and stories"
+        status: "docs/epics.md"
+        note: "6 epics with 50+ stories covering all FRs/NFRs"
 
       - id: "test-design"
         name: "Test Design"
         agent: "tea"
         command: "/bmad:bmm:workflows:testarch-test-design"
-        status: "recommended"
-        output: "System-level testability review"
+        status: "docs/test-design-system.md"
+        output: "System-level testability review completed 2025-12-12"
+
+      - id: "test-framework"
+        name: "Test Framework Setup"
+        agent: "tea"
+        command: "/bmad:bmm:workflows:testarch-framework"
+        status: "tests/README.md"
+        output: "Jest + factories + mock backend scaffolded 2025-12-12"
+
+      - id: "test-ci"
+        name: "CI Pipeline Setup"
+        agent: "tea"
+        command: "/bmad:bmm:workflows:testarch-ci"
+        status: ".github/workflows/test.yml"
+        output: "GitHub Actions pipeline with burn-in, coverage 2025-12-13"
 
       - id: "validate-architecture"
         name: "Validate Architecture"
@@ -98,8 +112,8 @@ workflow_status:
         name: "Implementation Readiness Check"
         agent: "architect"
         command: "/bmad:bmm:workflows:check-implementation-readiness"
-        status: "required"
-        note: "Validates PRD + Architecture + Epics + UX (optional)"
+        status: "docs/implementation-readiness-report-2025-12-13.md"
+        output: "READY FOR IMPLEMENTATION - 0 critical, 0 major, 2 minor issues"
 
   # Phase 3: Implementation
   - phase: 3
