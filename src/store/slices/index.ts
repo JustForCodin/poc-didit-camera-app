@@ -29,7 +29,7 @@ export {
   stopRecordingSuccess,
   setRecordingError,
   resetRecording,
-  clearLastResult,
+  clearLastResult as clearLastRecordingResult,
   selectRecordingState,
   selectIsRecording,
   selectRecordingStartedAt,
@@ -40,6 +40,29 @@ export {
 } from './recordingSlice';
 
 export type { RecordingSliceState } from './recordingSlice';
+
+export {
+  default as captureReducer,
+  startCaptureRequest,
+  startCaptureSuccess,
+  addCapturedFrame,
+  updateFrameCount,
+  stopCaptureRequest,
+  stopCaptureSuccess,
+  setCaptureError,
+  resetCapture,
+  clearLastResult as clearLastCaptureResult,
+  selectCaptureState,
+  selectIsCapturing,
+  selectCaptureStartedAt,
+  selectFrameCount,
+  selectCapturedFrames,
+  selectLastCaptureResult,
+  selectCaptureError,
+  selectCaptureIsLoading,
+} from './captureSlice';
+
+export type { CaptureSliceState } from './captureSlice';
 
 // Future slices will be added here:
 // export { default as sessionsReducer } from './sessionsSlice';
