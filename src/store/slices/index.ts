@@ -64,6 +64,27 @@ export {
 
 export type { CaptureSliceState } from './captureSlice';
 
+export {
+  default as dualCaptureReducer,
+  startDualCaptureRequest,
+  startDualCaptureSuccess,
+  updateFrameCount as updateDualCaptureFrameCount,
+  stopDualCaptureRequest,
+  stopDualCaptureSuccess,
+  setDualCaptureError,
+  resetDualCapture,
+  clearLastSession,
+  selectDualCaptureState,
+  selectIsDualCaptureActive,
+  selectDualCaptureStartedAt,
+  selectDualCaptureFrameCount,
+  selectLastDualCaptureSession,
+  selectDualCaptureError,
+  selectDualCaptureIsLoading,
+} from './dualCaptureSlice';
+
+export type { DualCaptureSliceState } from './dualCaptureSlice';
+
 // Future slices will be added here:
 // export { default as sessionsReducer } from './sessionsSlice';
 // export { default as backendsReducer } from './backendsSlice';

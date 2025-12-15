@@ -15,3 +15,6 @@ export type { UseFrameCaptureOptions, UseFrameCaptureReturn } from './useFrameCa
 
 export { useAppStateCapture } from './useAppStateCapture';
 export type { UseAppStateCaptureOptions } from './useAppStateCapture';
+
+export { useDualCapture } from './useDualCapture';
+export type { UseDualCaptureOptions, UseDualCaptureReturn } from './useDualCapture';

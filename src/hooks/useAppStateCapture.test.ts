@@ -13,9 +13,13 @@ import React from 'react';
 
 import { useAppStateCapture } from './useAppStateCapture';
 import { frameCaptureService } from '@/src/services/camera/capture';
+import { dualCaptureService } from '@/src/services/camera/dualCapture';
 import captureReducer, {
   startCaptureSuccess,
 } from '@/src/store/slices/captureSlice';
+import dualCaptureReducer, {
+  startDualCaptureSuccess,
+} from '@/src/store/slices/dualCaptureSlice';
 import recordingReducer from '@/src/store/slices/recordingSlice';
 import settingsReducer from '@/src/store/slices/settingsSlice';
 import authReducer from '@/src/store/slices/authSlice';
@@ -27,15 +31,23 @@ jest.mock('@/src/services/camera/capture', () => ({
   },
 }));
 
+// Mock the dual capture service
+jest.mock('@/src/services/camera/dualCapture', () => ({
+  dualCaptureService: {
+    cancelDualCapture: jest.fn().mockResolvedValue({ success: true }),
+  },
+}));
+
 // Store the callback for triggering in tests
 let appStateCallback: ((state: AppStateStatus) => void) | null = null;
 const mockRemove = jest.fn();
 
 // Create a test store
-function createTestStore(isCapturing = false) {
+function createTestStore(isCapturing = false, isDualCaptureActive = false) {
   const store = configureStore({
     reducer: {
       capture: captureReducer,
+      dualCapture: dualCaptureReducer,
       recording: recordingReducer,
       settings: settingsReducer,
       auth: authReducer,
@@ -45,6 +57,11 @@ function createTestStore(isCapturing = false) {
   // If we want to start in capturing state
   if (isCapturing) {
     store.dispatch(startCaptureSuccess({ startedAt: new Date().toISOString() }));
+  }
+
+  // If we want to start in dual capture active state
+  if (isDualCaptureActive) {
+    store.dispatch(startDualCaptureSuccess({ startedAt: new Date().toISOString() }));
   }
 
   return store;
@@ -413,6 +430,122 @@ describe('useAppStateCapture', () => {
 
       // lastResult should be preserved
       expect(store.getState().capture.lastResult).toEqual(mockFrames);
+    });
+  });
+
+  describe('dual capture mode', () => {
+    it('should cancel dual capture when app goes to background', async () => {
+      const store = createTestStore(false, true); // Dual capture active
+
+      renderHook(
+        () => useAppStateCapture({ enableDualCapture: true }),
+        { wrapper: createWrapper(store) }
+      );
+
+      // Verify we're in dual capture mode
+      expect(store.getState().dualCapture.isActive).toBe(true);
+
+      // Simulate app going to background
+      await act(async () => {
+        if (appStateCallback) {
+          appStateCallback('background');
+        }
+      });
+
+      expect(dualCaptureService.cancelDualCapture).toHaveBeenCalled();
+      expect(frameCaptureService.cancelCapture).not.toHaveBeenCalled();
+    });
+
+    it('should reset dual capture Redux state when cancelling', async () => {
+      const store = createTestStore(false, true);
+
+      renderHook(
+        () => useAppStateCapture({ enableDualCapture: true }),
+        { wrapper: createWrapper(store) }
+      );
+
+      await act(async () => {
+        if (appStateCallback) {
+          appStateCallback('background');
+        }
+      });
+
+      // State should be reset
+      expect(store.getState().dualCapture.state).toBe('idle');
+      expect(store.getState().dualCapture.isActive).toBe(false);
+    });
+
+    it('should call onBackgroundCancel in dual capture mode', async () => {
+      const store = createTestStore(false, true);
+      const onBackgroundCancel = jest.fn();
+
+      renderHook(
+        () => useAppStateCapture({ enableDualCapture: true, onBackgroundCancel }),
+        { wrapper: createWrapper(store) }
+      );
+
+      await act(async () => {
+        if (appStateCallback) {
+          appStateCallback('background');
+        }
+      });
+
+      expect(onBackgroundCancel).toHaveBeenCalled();
+    });
+
+    it('should not cancel frame capture when in dual capture mode', async () => {
+      const store = createTestStore(true, true); // Both capturing and dual capture
+
+      renderHook(
+        () => useAppStateCapture({ enableDualCapture: true }),
+        { wrapper: createWrapper(store) }
+      );
+
+      await act(async () => {
+        if (appStateCallback) {
+          appStateCallback('background');
+        }
+      });
+
+      // Should only cancel dual capture, not frame capture
+      expect(dualCaptureService.cancelDualCapture).toHaveBeenCalled();
+      expect(frameCaptureService.cancelCapture).not.toHaveBeenCalled();
+    });
+
+    it('should not cancel when not active in dual capture mode', async () => {
+      const store = createTestStore(false, false); // Not active
+
+      renderHook(
+        () => useAppStateCapture({ enableDualCapture: true }),
+        { wrapper: createWrapper(store) }
+      );
+
+      await act(async () => {
+        if (appStateCallback) {
+          appStateCallback('background');
+        }
+      });
+
+      expect(dualCaptureService.cancelDualCapture).not.toHaveBeenCalled();
+    });
+
+    it('should still handle frame capture when dual capture disabled', async () => {
+      const store = createTestStore(true, false); // Frame capture active
+
+      renderHook(
+        () => useAppStateCapture({ enableDualCapture: false }),
+        { wrapper: createWrapper(store) }
+      );
+
+      await act(async () => {
+        if (appStateCallback) {
+          appStateCallback('background');
+        }
+      });
+
+      // Should cancel frame capture, not dual capture
+      expect(frameCaptureService.cancelCapture).toHaveBeenCalled();
+      expect(dualCaptureService.cancelDualCapture).not.toHaveBeenCalled();
     });
   });
 });

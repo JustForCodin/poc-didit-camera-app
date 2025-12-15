@@ -47,3 +47,20 @@ export type {
   CaptureOptions,
   CapturedFrame,
 } from './capture';
+
+export {
+  DualCaptureService,
+  dualCaptureService,
+  startDualCapture,
+  stopDualCapture,
+  isDualCaptureActive,
+  getDualCaptureState,
+  DUAL_CAPTURE_ERROR_MESSAGES,
+  getDualCaptureErrorMessage,
+} from './dualCapture';
+
+export type {
+  DualCaptureState,
+  DualCaptureOptions,
+  DualCaptureSession,
+} from './dualCapture';
