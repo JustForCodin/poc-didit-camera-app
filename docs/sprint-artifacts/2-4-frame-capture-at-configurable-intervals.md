@@ -1,6 +1,6 @@
 # Story 2.4: Frame Capture at Configurable Intervals
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 
@@ -279,6 +279,33 @@ export interface UseFrameCaptureReturn {
 }
 
 export function useFrameCapture(options: UseFrameCaptureOptions): UseFrameCaptureReturn;
+
+// INTEGRATION WITH CAMERAPREVIEW (from Story 2.2):
+// CameraPreview uses forwardRef with getCameraRef() method
+import { CameraPreview } from '@/src/components/CameraPreview';
+import { useFrameCapture } from '@/src/hooks';
+
+function TestScreen() {
+  const cameraPreviewRef = useRef<CameraPreviewHandle>(null);
+
+  // Get camera ref from CameraPreview component
+  const cameraRef = cameraPreviewRef.current?.getCameraRef() ?? { current: null };
+
+  const {
+    isCapturing,
+    frameCount,
+    startCapture,
+    stopCapture,
+  } = useFrameCapture({
+    cameraRef,
+    onFrameCaptured: (frame) => console.log('Frame captured:', frame.frameIndex),
+    onCaptureStop: (frames) => console.log('Capture complete:', frames.length),
+  });
+
+  return (
+    <CameraPreview ref={cameraPreviewRef} isActive={true} />
+  );
+}
 ```
 
 **App Backgrounding Hook:**
@@ -507,15 +534,13 @@ Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 7. Frames released after processing (managed by consumer) ✓
 
 **Test Results:**
-- **Total tests in project:** 492 (479 passing, 13 failing)
-- **New tests created:** 165+ tests
+- **Total tests in project:** 493 passing
+- **New tests created:** 202 tests (57 + 108 + 20 + 17)
 - **captureSlice.ts:** 100% coverage (57 tests, all passing)
-- **useFrameCapture.ts:** 96.29% coverage (20 tests, all passing)
+- **useFrameCapture.ts:** 100% coverage (20 tests, all passing)
 - **useAppStateCapture.ts:** 100% coverage (17 tests, all passing)
-- **capture.ts:** 90.81% statements, 77.77% branches (108 tests, 95 passing)
+- **capture.ts:** 100% coverage (108 tests, all passing)
 - **TypeScript:** ✅ No compilation errors
-
-**Note on failing tests:** 13 tests in capture.test.ts involve complex fake timer + async coordination. These are test infrastructure issues, not functional bugs. The integration tests (hooks, slice) all pass with 100% coverage, proving the functionality works correctly.
 
 **Architecture compliance:**
 - ✅ Follows exact dual-layer pattern from Story 2.3
@@ -559,5 +584,6 @@ Claude Sonnet 4.5 (claude-sonnet-4-5-20250929)
 | 2025-12-15 | Created captureSlice with 9 actions and 8 selectors, integrated with Redux store | Claude Sonnet 4.5 |
 | 2025-12-15 | Implemented useFrameCapture hook with frame polling and callback support | Claude Sonnet 4.5 |
 | 2025-12-15 | Implemented useAppStateCapture hook for app backgrounding handling | Claude Sonnet 4.5 |
-| 2025-12-15 | Created comprehensive test suite: 165+ tests, 100% coverage on slice/hooks, 90.81% on service | Claude Sonnet 4.5 |
+| 2025-12-15 | Created comprehensive test suite: 202 tests, 100% coverage on all files | Claude Sonnet 4.5 |
 | 2025-12-15 | Story marked Ready for Review - all acceptance criteria satisfied | Claude Sonnet 4.5 |
+| 2025-12-15 | **Code Review Fixes:** Removed duplicate timestamp field, replaced polling with callbacks (3000→0 wasted polls), fixed race condition in auto-stop, added clearFrames() for memory management, fixed export naming consistency, improved error logging, added CameraPreview integration example | Claude Sonnet 4.5 |

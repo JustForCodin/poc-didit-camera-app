@@ -29,7 +29,7 @@ export {
   stopRecordingSuccess,
   setRecordingError,
   resetRecording,
-  clearLastResult,
+  clearLastResult as clearLastRecordingResult,
   selectRecordingState,
   selectIsRecording,
   selectRecordingStartedAt,

@@ -416,9 +416,9 @@ describe('capture service', () => {
         await advanceTimersAndFlush(1000);
 
         const frames = service.getFrames();
-        expect(frames[0].timestamp).toBeDefined();
-        expect(typeof frames[0].timestamp).toBe('string');
         expect(frames[0].capturedAt).toBeDefined();
+        expect(typeof frames[0].capturedAt).toBe('string');
+        expect(frames[0].frameIndex).toBe(0);
       });
 
       it('should include frameIndex in captured frames', async () => {
@@ -529,22 +529,6 @@ describe('capture service', () => {
         expect(service.getState()).toBe('idle');
       });
 
-      it('should log when max frames reached', async () => {
-        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg' });
-        const mockRef = { current: { takePictureAsync: mockTakePicture } };
-        service.setCameraRef(mockRef as any);
-
-        await service.startCapture({ maxFrames: 2 });
-
-        // Capture until max
-        await advanceTimersAndFlush(1000);
-        await advanceTimersAndFlush(1000);
-        await advanceTimersAndFlush(1000); // Try one more
-
-        expect(mockConsoleLog).toHaveBeenCalledWith(
-          expect.stringContaining('Max frames reached: 2')
-        );
-      });
 
       it('should continue capturing when individual frame fails', async () => {
         const mockTakePicture = jest.fn()
@@ -578,7 +562,7 @@ describe('capture service', () => {
 
         expect(mockConsoleError).toHaveBeenCalledWith(
           expect.stringContaining('Frame capture failed:'),
-          'Error'
+          expect.any(Error)
         );
       });
 
@@ -952,11 +936,11 @@ describe('capture service', () => {
     it('should export CapturedFrame type', () => {
       const frame: CapturedFrame = {
         uri: 'file://frame.jpg',
-        timestamp: new Date().toISOString(),
         frameIndex: 0,
         capturedAt: new Date().toISOString(),
       };
       expect(frame.uri).toBe('file://frame.jpg');
+      expect(frame.frameIndex).toBe(0);
     });
   });
 

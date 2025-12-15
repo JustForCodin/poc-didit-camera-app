@@ -38,14 +38,12 @@ export interface CaptureOptions {
 export interface CapturedFrame {
   /** Path to the captured JPEG frame */
   uri: string;
-  /** ISO timestamp for synchronization */
-  timestamp: string;
   /** Sequential frame number (0-based) */
   frameIndex: number;
+  /** ISO timestamp when frame was captured (for synchronization) */
+  capturedAt: string;
   /** Frame file size in bytes (if available) */
   fileSize?: number;
-  /** ISO timestamp when frame was captured */
-  capturedAt: string;
 }
 
 /**
@@ -126,6 +124,7 @@ export class FrameCaptureService {
   private frameCount: number = 0;
   private frames: CapturedFrame[] = [];
   private options: Required<CaptureOptions> = DEFAULT_OPTIONS;
+  private onFrameCapturedCallback?: (frame: CapturedFrame) => void;
 
   /**
    * Set the camera reference for capture
@@ -160,6 +159,22 @@ export class FrameCaptureService {
    */
   getFrames(): CapturedFrame[] {
     return [...this.frames]; // Return copy to prevent external modification
+  }
+
+  /**
+   * Set callback to be notified when a frame is captured
+   */
+  setOnFrameCaptured(callback?: (frame: CapturedFrame) => void): void {
+    this.onFrameCapturedCallback = callback;
+  }
+
+  /**
+   * Clear captured frames to free memory
+   * Call this after frames have been uploaded/processed
+   */
+  clearFrames(): void {
+    this.frames = [];
+    this.frameCount = 0;
   }
 
   /**
@@ -204,7 +219,7 @@ export class FrameCaptureService {
       };
     } catch (error) {
       this.state = 'error';
-      console.error('[FrameCaptureService] Start error:', (error as Error).name);
+      console.error('[FrameCaptureService] Start error:', error);
       return {
         success: false,
         error: getCaptureErrorMessage('start_failed'),
@@ -246,7 +261,7 @@ export class FrameCaptureService {
       };
     } catch (error) {
       this.state = 'error';
-      console.error('[FrameCaptureService] Stop error:', (error as Error).name);
+      console.error('[FrameCaptureService] Stop error:', error);
       return {
         success: false,
         error: getCaptureErrorMessage('stop_failed'),
@@ -277,7 +292,7 @@ export class FrameCaptureService {
 
       return { success: true, data: undefined };
     } catch (error) {
-      console.error('[FrameCaptureService] Cancel error:', (error as Error).name);
+      console.error('[FrameCaptureService] Cancel error:', error);
       this.state = 'idle';
       return { success: true, data: undefined };
     }
@@ -302,6 +317,11 @@ export class FrameCaptureService {
    * Private method to capture a single frame
    */
   private async captureFrame(): Promise<void> {
+    // Guard against concurrent stops or invalid state
+    if (this.state !== 'capturing') {
+      return;
+    }
+
     if (!this.cameraRef?.current) {
       console.error('[FrameCaptureService] Camera ref not available');
       return;
@@ -309,7 +329,6 @@ export class FrameCaptureService {
 
     // Check max frames limit
     if (this.frameCount >= this.options.maxFrames) {
-      console.log(`[FrameCaptureService] Max frames reached: ${this.options.maxFrames}`);
       await this.stopCapture();
       return;
     }
@@ -336,18 +355,18 @@ export class FrameCaptureService {
       // Create frame record
       const frame: CapturedFrame = {
         uri: photo.uri,
-        timestamp: new Date().toISOString(),
         frameIndex: this.frameCount,
-        fileSize,
         capturedAt: new Date().toISOString(),
+        fileSize,
       };
 
       this.frames.push(frame);
       this.frameCount++;
 
-      console.log(`[FrameCaptureService] Frame ${this.frameCount} captured`);
+      // Notify callback immediately when frame is captured
+      this.onFrameCapturedCallback?.(frame);
     } catch (error) {
-      console.error('[FrameCaptureService] Frame capture failed:', (error as Error).name);
+      console.error('[FrameCaptureService] Frame capture failed:', error);
       // Don't stop capture on individual frame failure - continue
     }
   }

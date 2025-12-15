@@ -5,14 +5,13 @@
  * Provides a simple API for components to control frame capture.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect } from 'react';
 import { CameraView } from 'expo-camera';
 import { useAppDispatch, useAppSelector } from '@/src/store/hooks';
 import {
   startCaptureRequest,
   startCaptureSuccess,
   addCapturedFrame,
-  updateFrameCount,
   stopCaptureRequest,
   stopCaptureSuccess,
   setCaptureError,
@@ -90,9 +89,6 @@ export function useFrameCapture({
   const error = useAppSelector(selectCaptureError);
   const lastResult = useAppSelector(selectLastCaptureResult);
 
-  // Frame polling ref
-  const framePollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   // Set camera ref on mount and when it changes
   useEffect(() => {
     if (cameraRef.current) {
@@ -100,34 +96,19 @@ export function useFrameCapture({
     }
   }, [cameraRef]);
 
-  // Frame polling management - poll service for new frames
+  // Set up frame capture callback - no polling needed!
   useEffect(() => {
-    if (isCapturing && !framePollingIntervalRef.current) {
-      // Poll every 100ms for new frames
-      framePollingIntervalRef.current = setInterval(() => {
-        const serviceFrameCount = frameCaptureService.getFrameCount();
-        if (serviceFrameCount > frameCount) {
-          // New frames captured - update Redux
-          const allFrames = frameCaptureService.getFrames();
-          const newFrames = allFrames.slice(frameCount);
-          newFrames.forEach((frame) => {
-            dispatch(addCapturedFrame(frame));
-            onFrameCaptured?.(frame);
-          });
-        }
-      }, 100); // Poll every 100ms for UI updates
-    } else if (!isCapturing && framePollingIntervalRef.current) {
-      clearInterval(framePollingIntervalRef.current);
-      framePollingIntervalRef.current = null;
-    }
+    const handleFrameCaptured = (frame: CapturedFrame) => {
+      dispatch(addCapturedFrame(frame));
+      onFrameCaptured?.(frame);
+    };
+
+    frameCaptureService.setOnFrameCaptured(handleFrameCaptured);
 
     return () => {
-      if (framePollingIntervalRef.current) {
-        clearInterval(framePollingIntervalRef.current);
-        framePollingIntervalRef.current = null;
-      }
+      frameCaptureService.setOnFrameCaptured(undefined);
     };
-  }, [isCapturing, frameCount, dispatch, onFrameCaptured]);
+  }, [dispatch, onFrameCaptured]);
 
   /**
    * Start capture

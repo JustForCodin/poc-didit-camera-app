@@ -27,6 +27,8 @@ jest.mock('@/src/services/camera/capture', () => ({
     reset: jest.fn(),
     getFrameCount: jest.fn(),
     getFrames: jest.fn(),
+    setOnFrameCaptured: jest.fn(),
+    clearFrames: jest.fn(),
   },
   CaptureOptions: {},
   CapturedFrame: {},
@@ -60,19 +62,16 @@ describe('useFrameCapture', () => {
       frameIndex: 0,
       capturedAt: '2025-01-01T00:00:00.000Z',
       uri: 'file://frame1.jpg',
-      timestamp: '2025-01-01T00:00:00.000Z',
     },
     {
-      frameIndex: 0,
-      capturedAt: '2025-01-01T00:00:00.000Z',
+      frameIndex: 1,
+      capturedAt: '2025-01-01T00:00:01.000Z',
       uri: 'file://frame2.jpg',
-      timestamp: '2025-01-01T00:00:01.000Z',
     },
     {
-      frameIndex: 0,
-      capturedAt: '2025-01-01T00:00:00.000Z',
+      frameIndex: 2,
+      capturedAt: '2025-01-01T00:00:02.000Z',
       uri: 'file://frame3.jpg',
-      timestamp: '2025-01-01T00:00:02.000Z',
     },
   ];
 
@@ -373,179 +372,71 @@ describe('useFrameCapture', () => {
     });
   });
 
-  describe('frame polling', () => {
-    beforeEach(() => {
-      jest.useFakeTimers();
-    });
-
-    afterEach(() => {
-      jest.useRealTimers();
-    });
-
-    it('should start polling when capture starts', async () => {
-      (frameCaptureService.startCapture as jest.Mock).mockResolvedValue({
-        success: true,
-        data: { startedAt: new Date().toISOString() },
-      });
-      (frameCaptureService.getFrameCount as jest.Mock).mockReturnValue(0);
-
-      const { result } = renderHook(
+  describe('frame capture callback', () => {
+    it('should register callback with service on mount', () => {
+      renderHook(
         () => useFrameCapture({ cameraRef: mockCameraRef }),
         { wrapper: createWrapper(store) }
       );
 
-      await act(async () => {
-        await result.current.startCapture();
-      });
-
-      // Advance timer to trigger polling
-      await act(async () => {
-        jest.advanceTimersByTime(100);
-      });
-
-      expect(frameCaptureService.getFrameCount).toHaveBeenCalled();
+      expect(frameCaptureService.setOnFrameCaptured).toHaveBeenCalledWith(
+        expect.any(Function)
+      );
     });
 
-    it('should detect new frames and update state', async () => {
+    it('should notify onFrameCaptured when service calls callback', async () => {
       const newFrame = mockCapturedFrames[0];
-
-      (frameCaptureService.startCapture as jest.Mock).mockResolvedValue({
-        success: true,
-        data: { startedAt: new Date().toISOString() },
-      });
-
-      // Set up frame count to return 0 initially, then 1
-      let callCount = 0;
-      (frameCaptureService.getFrameCount as jest.Mock).mockImplementation(() => {
-        return callCount++ === 0 ? 0 : 1;
-      });
-      (frameCaptureService.getFrames as jest.Mock).mockReturnValue([newFrame]);
-
       const onFrameCaptured = jest.fn();
-      const { result } = renderHook(
+
+      renderHook(
         () => useFrameCapture({ cameraRef: mockCameraRef, onFrameCaptured }),
         { wrapper: createWrapper(store) }
       );
 
+      // Get the registered callback
+      const registeredCallback = (frameCaptureService.setOnFrameCaptured as jest.Mock).mock.calls[0][0];
+
+      // Simulate service calling the callback
       await act(async () => {
-        await result.current.startCapture();
+        registeredCallback(newFrame);
       });
 
-      // Initial frame count is 0
-      expect(result.current.frameCount).toBe(0);
-
-      // Advance timer to trigger polling
-      await act(async () => {
-        jest.advanceTimersByTime(100);
-      });
-
-      // Frame count should have updated
-      await waitFor(() => {
-        expect(result.current.frameCount).toBe(1);
-        expect(result.current.frames).toHaveLength(1);
-        expect(onFrameCaptured).toHaveBeenCalledWith(newFrame);
-      });
+      expect(onFrameCaptured).toHaveBeenCalledWith(newFrame);
     });
 
-    it('should add multiple new frames', async () => {
-      (frameCaptureService.startCapture as jest.Mock).mockResolvedValue({
-        success: true,
-        data: { startedAt: new Date().toISOString() },
-      });
-
-      // Set up frame count to return 0 initially, then 2
-      let callCount = 0;
-      (frameCaptureService.getFrameCount as jest.Mock).mockImplementation(() => {
-        return callCount++ === 0 ? 0 : 2;
-      });
-      (frameCaptureService.getFrames as jest.Mock).mockReturnValue([
-        mockCapturedFrames[0],
-        mockCapturedFrames[1],
-      ]);
-
-      const onFrameCaptured = jest.fn();
-      const { result } = renderHook(
-        () => useFrameCapture({ cameraRef: mockCameraRef, onFrameCaptured }),
-        { wrapper: createWrapper(store) }
-      );
-
-      await act(async () => {
-        await result.current.startCapture();
-      });
-
-      await act(async () => {
-        jest.advanceTimersByTime(100);
-      });
-
-      await waitFor(() => {
-        expect(result.current.frameCount).toBe(2);
-        expect(result.current.frames).toHaveLength(2);
-        expect(onFrameCaptured).toHaveBeenCalledTimes(2);
-      });
-    });
-
-    it('should stop polling when capture stops', async () => {
-      (frameCaptureService.startCapture as jest.Mock).mockResolvedValue({
-        success: true,
-        data: { startedAt: new Date().toISOString() },
-      });
-      (frameCaptureService.stopCapture as jest.Mock).mockResolvedValue({
-        success: true,
-        data: mockCapturedFrames,
-      });
-      (frameCaptureService.getFrameCount as jest.Mock).mockReturnValue(0);
-
-      const { result } = renderHook(
+    it('should unregister callback on unmount', () => {
+      const { unmount } = renderHook(
         () => useFrameCapture({ cameraRef: mockCameraRef }),
         { wrapper: createWrapper(store) }
       );
 
-      await act(async () => {
-        await result.current.startCapture();
-      });
-
-      // Clear mock call count
-      (frameCaptureService.getFrameCount as jest.Mock).mockClear();
-
-      await act(async () => {
-        await result.current.stopCapture();
-      });
-
-      // Advance timer - should not poll anymore
-      await act(async () => {
-        jest.advanceTimersByTime(500);
-      });
-
-      expect(frameCaptureService.getFrameCount).not.toHaveBeenCalled();
-    });
-
-    it('should cleanup polling interval on unmount', async () => {
-      (frameCaptureService.startCapture as jest.Mock).mockResolvedValue({
-        success: true,
-        data: { startedAt: new Date().toISOString() },
-      });
-      (frameCaptureService.getFrameCount as jest.Mock).mockReturnValue(0);
-
-      const { result, unmount } = renderHook(
-        () => useFrameCapture({ cameraRef: mockCameraRef }),
-        { wrapper: createWrapper(store) }
-      );
-
-      await act(async () => {
-        await result.current.startCapture();
-      });
-
-      // Clear mock
-      (frameCaptureService.getFrameCount as jest.Mock).mockClear();
+      (frameCaptureService.setOnFrameCaptured as jest.Mock).mockClear();
 
       unmount();
 
-      // Advance timer - should not poll after unmount
+      expect(frameCaptureService.setOnFrameCaptured).toHaveBeenCalledWith(undefined);
+    });
+
+    it('should add multiple frames via callback', async () => {
+      const onFrameCaptured = jest.fn();
+
+      renderHook(
+        () => useFrameCapture({ cameraRef: mockCameraRef, onFrameCaptured }),
+        { wrapper: createWrapper(store) }
+      );
+
+      // Get the registered callback
+      const registeredCallback = (frameCaptureService.setOnFrameCaptured as jest.Mock).mock.calls[0][0];
+
+      // Simulate service calling the callback multiple times
       await act(async () => {
-        jest.advanceTimersByTime(500);
+        registeredCallback(mockCapturedFrames[0]);
+        registeredCallback(mockCapturedFrames[1]);
       });
 
-      expect(frameCaptureService.getFrameCount).not.toHaveBeenCalled();
+      expect(onFrameCaptured).toHaveBeenCalledTimes(2);
+      expect(onFrameCaptured).toHaveBeenCalledWith(mockCapturedFrames[0]);
+      expect(onFrameCaptured).toHaveBeenCalledWith(mockCapturedFrames[1]);
     });
   });
 

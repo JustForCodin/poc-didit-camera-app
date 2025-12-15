@@ -56,7 +56,7 @@ development_status:
   2-1-camera-permission-handling: done
   2-2-camera-preview-component: done
   2-3-video-recording-service: done
-  2-4-frame-capture-at-configurable-intervals: review
+  2-4-frame-capture-at-configurable-intervals: done
   2-5-dual-capture-mode-video-frames: backlog
   2-6-video-compression-local-storage: backlog
   2-7-recording-controls-ui: backlog
