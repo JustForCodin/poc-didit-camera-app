@@ -476,6 +476,26 @@ describe('capture service', () => {
         expect(frames[0].fileSize).toBe(50000);
       });
 
+      it('should handle fileInfo without size property', async () => {
+        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        // Mock FileSystem to return exists:true but no size
+        const FileSystem = require('expo-file-system');
+        FileSystem.getInfoAsync.mockResolvedValue({
+          exists: true,
+          // no size property
+        });
+
+        await service.startCapture();
+
+        await advanceTimersAndFlush(1000);
+
+        const frames = service.getFrames();
+        expect(frames[0].fileSize).toBeUndefined();
+      });
+
       it('should continue capturing when fileSize fetch fails', async () => {
         const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg' });
         const mockRef = { current: { takePictureAsync: mockTakePicture } };
@@ -586,6 +606,26 @@ describe('capture service', () => {
         expect(service.isCapturing()).toBe(true); // Still trying to capture
       });
 
+      it('should handle camera ref becoming undefined during capture', async () => {
+        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startCapture();
+
+        // Make cameraRef undefined
+        (service as any).cameraRef = undefined;
+
+        await advanceTimersAndFlush(1000);
+
+        // Should log error and not crash
+        expect(mockConsoleError).toHaveBeenCalledWith(
+          expect.stringContaining('Camera ref not available')
+        );
+        expect(service.getFrameCount()).toBe(0); // No frames captured
+        expect(service.isCapturing()).toBe(true); // Still trying to capture
+      });
+
       it('should handle error when start fails', async () => {
         const mockRef = { current: { takePictureAsync: jest.fn() } };
         service.setCameraRef(mockRef as any);
@@ -606,6 +646,24 @@ describe('capture service', () => {
 
         // Restore
         global.setInterval = originalSetInterval;
+      });
+
+      it('should handle state guard in captureFrame when stopped mid-capture', async () => {
+        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startCapture();
+
+        // Immediately stop before timer fires
+        await service.stopCapture();
+
+        // Now advance timer - captureFrame should hit state guard and return early
+        await advanceTimersAndFlush(1000);
+
+        // Should not capture any frames after stop
+        expect(mockTakePicture).toHaveBeenCalledTimes(0);
+        expect(service.isCapturing()).toBe(false);
       });
     });
 
@@ -697,6 +755,35 @@ describe('capture service', () => {
 
         // Should still succeed even with null interval
         expect(result.success).toBe(true);
+      });
+
+      it('should catch and handle exceptions during stop', async () => {
+        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startCapture();
+
+        // Force an error by making clearInterval throw
+        const originalClearInterval = global.clearInterval;
+        global.clearInterval = jest.fn(() => {
+          throw new Error('clearInterval error');
+        });
+
+        const result = await service.stopCapture();
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error).toBe('Failed to stop frame capture.');
+        }
+        expect(service.getState()).toBe('error');
+        expect(mockConsoleError).toHaveBeenCalledWith(
+          '[FrameCaptureService] Stop error:',
+          expect.any(Error)
+        );
+
+        // Restore
+        global.clearInterval = originalClearInterval;
       });
     });
 
@@ -820,6 +907,170 @@ describe('capture service', () => {
         });
       });
     });
+
+    describe('Callback mechanism', () => {
+      describe('setOnFrameCaptured', () => {
+        it('should register callback successfully', () => {
+          const callback = jest.fn();
+          service.setOnFrameCaptured(callback);
+
+        // Callback should be registered (no errors)
+        expect(callback).not.toHaveBeenCalled();
+      });
+
+      it('should call callback when frame is captured', async () => {
+        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame1.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        const callback = jest.fn();
+        service.setOnFrameCaptured(callback);
+
+        await service.startCapture();
+
+        // Advance timers to capture a frame
+        await advanceTimersAndFlush(1000);
+
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback).toHaveBeenCalledWith(
+          expect.objectContaining({
+            uri: 'file://frame1.jpg',
+            frameIndex: 0,
+            capturedAt: expect.any(String),
+          })
+        );
+      });
+
+      it('should call callback for multiple frames', async () => {
+        const mockTakePicture = jest.fn()
+          .mockResolvedValueOnce({ uri: 'file://frame1.jpg' })
+          .mockResolvedValueOnce({ uri: 'file://frame2.jpg' })
+          .mockResolvedValueOnce({ uri: 'file://frame3.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        const callback = jest.fn();
+        service.setOnFrameCaptured(callback);
+
+        await service.startCapture();
+
+        // Capture 3 frames
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
+
+        expect(callback).toHaveBeenCalledTimes(3);
+        expect(callback).toHaveBeenNthCalledWith(
+          1,
+          expect.objectContaining({ uri: 'file://frame1.jpg', frameIndex: 0 })
+        );
+        expect(callback).toHaveBeenNthCalledWith(
+          2,
+          expect.objectContaining({ uri: 'file://frame2.jpg', frameIndex: 1 })
+        );
+        expect(callback).toHaveBeenNthCalledWith(
+          3,
+          expect.objectContaining({ uri: 'file://frame3.jpg', frameIndex: 2 })
+        );
+      });
+
+      it('should allow unregistering callback', async () => {
+        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        const callback = jest.fn();
+        service.setOnFrameCaptured(callback);
+
+        await service.startCapture();
+        await advanceTimersAndFlush(1000);
+
+        expect(callback).toHaveBeenCalledTimes(1);
+
+        // Unregister callback
+        service.setOnFrameCaptured(undefined);
+
+        // Capture another frame
+        await advanceTimersAndFlush(1000);
+
+        // Callback should not be called again
+        expect(callback).toHaveBeenCalledTimes(1);
+      });
+
+      it('should not throw error if callback is not set', async () => {
+        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        // No callback registered
+        service.setOnFrameCaptured(undefined);
+
+        await service.startCapture();
+
+        // Should capture frame without error
+        await expect(advanceTimersAndFlush(1000)).resolves.not.toThrow();
+        expect(service.getFrameCount()).toBe(1);
+      });
+    });
+
+    describe('clearFrames', () => {
+      it('should clear all frames and reset count', async () => {
+        const mockTakePicture = jest.fn()
+          .mockResolvedValueOnce({ uri: 'file://frame1.jpg' })
+          .mockResolvedValueOnce({ uri: 'file://frame2.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startCapture();
+
+        // Capture 2 frames
+        await advanceTimersAndFlush(1000);
+        await advanceTimersAndFlush(1000);
+
+        expect(service.getFrameCount()).toBe(2);
+        expect(service.getFrames()).toHaveLength(2);
+
+        // Clear frames
+        service.clearFrames();
+
+        expect(service.getFrameCount()).toBe(0);
+        expect(service.getFrames()).toEqual([]);
+      });
+
+      it('should work when no frames captured', () => {
+        service.clearFrames();
+
+        expect(service.getFrameCount()).toBe(0);
+        expect(service.getFrames()).toEqual([]);
+      });
+
+      it('should allow capturing new frames after clearing', async () => {
+        const mockTakePicture = jest.fn()
+          .mockResolvedValueOnce({ uri: 'file://frame1.jpg' })
+          .mockResolvedValueOnce({ uri: 'file://frame2.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startCapture();
+        await advanceTimersAndFlush(1000);
+
+        expect(service.getFrameCount()).toBe(1);
+
+        // Clear frames
+        service.clearFrames();
+
+        // Capture another frame
+        await advanceTimersAndFlush(1000);
+
+        expect(service.getFrameCount()).toBe(1);
+        expect(service.getFrames()).toHaveLength(1);
+        expect(service.getFrames()[0]).toMatchObject({
+          uri: 'file://frame2.jpg',
+          frameIndex: 0, // frameIndex resets after clear
+        });
+      });
+    });
+  });
   });
 
   describe('Singleton instance', () => {
