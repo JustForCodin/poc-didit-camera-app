@@ -117,6 +117,38 @@ export function isRecording(): boolean;
 export function getRecordingState(): RecordingState;
 ```
 
+**Input Validation (Added in Code Review):**
+
+```typescript
+// Recording option constraints - validated and clamped
+const OPTION_CONSTRAINTS = {
+  maxDuration: { min: 1, max: 3600 },      // 1 second to 1 hour
+  maxFileSize: { min: 0, max: 2147483648 }, // 0 (no limit) to 2GB
+};
+
+// Options are validated before being passed to expo-camera:
+// - maxDuration clamped to 1-3600 seconds
+// - maxFileSize clamped to 0-2GB (0 means no limit)
+// - Decimal values are floored to integers
+function validateRecordingOptions(options: RecordingOptions): Required<RecordingOptions>;
+```
+
+**CameraPreview forwardRef (Added in Code Review):**
+
+```typescript
+// src/components/camera/CameraPreview.tsx
+
+// Ref interface exposed to parent components
+export interface CameraPreviewRef {
+  getCameraRef: () => React.RefObject<CameraView | null>;
+}
+
+// Usage in parent component:
+const cameraPreviewRef = useRef<CameraPreviewRef>(null);
+const cameraRef = cameraPreviewRef.current?.getCameraRef();
+// cameraRef can now be passed to useRecording hook
+```
+
 **Recording Redux Slice:**
 
 ```typescript
@@ -339,7 +371,28 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Final Test Results:
 - TypeScript: Compiles with no errors
-- Tests: 281 passed, 0 failed (28 new tests added)
+- Tests: 292 passed, 0 failed (39 new tests added)
+- Coverage for recording.ts: 100% statements, 100% branches, 100% functions, 100% lines
+
+### Additional Coverage Tests Added:
+To meet CI coverage thresholds (90%), the following edge case tests were added:
+
+**Error Handling Tests:**
+- `startRecording` error handling when `recordAsync` throws hardware error
+- `stopRecording` error handling when camera ref becomes null during recording
+- `stopRecording` error handling when internal `recordingPromise` is null
+- `stopRecording` error handling when `stopRecording()` throws
+- `cancelRecording` graceful error handling when cancel fails
+
+**Fallback Branch Tests:**
+- `stopRecording` with null `startTime` (uses `stoppedAt` as fallback for `startedAt`)
+- `cancelRecording` when `cameraRef` becomes null (skips stopRecording call)
+
+**File System Tests:**
+- File exists with size property
+- File exists without size property
+- File does not exist
+- `getInfoAsync` throws error (gracefully ignored)
 
 ## Change Log
 
@@ -348,3 +401,4 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 | 2025-12-15 | Story created, implementation in progress | Claude Opus 4.5 |
 | 2025-12-15 | Implementation complete, all 253 tests passing, moved to review | Claude Opus 4.5 |
 | 2025-12-15 | Code review completed, 3 medium issues fixed, 28 tests added, status: done | Claude Opus 4.5 |
+| 2025-12-15 | Added 11 edge case tests to meet CI coverage thresholds (90%), total 292 tests | Claude Opus 4.5 |

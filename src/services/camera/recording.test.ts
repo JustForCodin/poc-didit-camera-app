@@ -254,6 +254,23 @@ describe('recording service', () => {
           expect(result.error).toBe('Recording is already in progress.');
         }
       });
+
+      it('should return error and set state to error when recordAsync throws', async () => {
+        const mockRecordAsync = jest.fn().mockImplementation(() => {
+          throw new Error('Camera hardware error');
+        });
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: jest.fn() } };
+        service.setCameraRef(mockRef as any);
+
+        const result = await service.startRecording();
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error).toBe('Failed to start recording.');
+        }
+        expect(service.getState()).toBe('error');
+        expect(mockConsoleError).toHaveBeenCalled();
+      });
     });
 
     describe('stopRecording', () => {
@@ -286,6 +303,158 @@ describe('recording service', () => {
         expect(service.getState()).toBe('idle');
         expect(service.isRecording()).toBe(false);
       });
+
+      it('should return error when camera ref becomes null during recording', async () => {
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockStopRecording = jest.fn();
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: mockStopRecording } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording();
+        // Simulate camera ref becoming null (e.g., component unmount)
+        mockRef.current = null as any;
+
+        const result = await service.stopRecording();
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error).toBe('Camera is not ready for recording.');
+        }
+      });
+
+      it('should return error and set state to error when stop throws', async () => {
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockStopRecording = jest.fn().mockImplementation(() => {
+          throw new Error('Hardware failure');
+        });
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: mockStopRecording } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording();
+        const result = await service.stopRecording();
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error).toBe('Failed to stop recording.');
+        }
+        expect(service.getState()).toBe('error');
+        expect(mockConsoleError).toHaveBeenCalled();
+      });
+
+      it('should include fileSize when file exists with size', async () => {
+        const FileSystem = require('expo-file-system');
+        FileSystem.getInfoAsync.mockResolvedValue({ exists: true, size: 2048000 });
+
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockStopRecording = jest.fn();
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: mockStopRecording } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording();
+        const result = await service.stopRecording();
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.fileSize).toBe(2048000);
+        }
+      });
+
+      it('should handle file info without size property', async () => {
+        const FileSystem = require('expo-file-system');
+        FileSystem.getInfoAsync.mockResolvedValue({ exists: true });
+
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockStopRecording = jest.fn();
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: mockStopRecording } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording();
+        const result = await service.stopRecording();
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.fileSize).toBeUndefined();
+        }
+      });
+
+      it('should handle file not existing', async () => {
+        const FileSystem = require('expo-file-system');
+        FileSystem.getInfoAsync.mockResolvedValue({ exists: false });
+
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockStopRecording = jest.fn();
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: mockStopRecording } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording();
+        const result = await service.stopRecording();
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.fileSize).toBeUndefined();
+        }
+      });
+
+      it('should handle getInfoAsync throwing an error', async () => {
+        const FileSystem = require('expo-file-system');
+        FileSystem.getInfoAsync.mockRejectedValue(new Error('File system error'));
+
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockStopRecording = jest.fn();
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: mockStopRecording } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording();
+        const result = await service.stopRecording();
+
+        // Should still succeed, fileSize is optional
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result.data.fileSize).toBeUndefined();
+        }
+      });
+
+      it('should return error when recordingPromise is null (edge case)', async () => {
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockStopRecording = jest.fn();
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: mockStopRecording } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording();
+
+        // Manually manipulate internal state to simulate edge case
+        // where recordingPromise is null but state is 'recording'
+        (service as any).recordingPromise = null;
+
+        const result = await service.stopRecording();
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error).toBe('Failed to stop recording.');
+        }
+      });
+
+      it('should handle null startTime and use stoppedAt as fallback (edge case)', async () => {
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockStopRecording = jest.fn();
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: mockStopRecording } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording();
+
+        // Manually clear startTime to simulate edge case
+        (service as any).startTime = null;
+
+        const result = await service.stopRecording();
+
+        expect(result.success).toBe(true);
+        if (result.success) {
+          // Duration should be 0 since startTime was null
+          expect(result.data.durationMs).toBe(0);
+          // startedAt should fallback to stoppedAt
+          expect(result.data.startedAt).toBe(result.data.stoppedAt);
+        }
+      });
     });
 
     describe('cancelRecording', () => {
@@ -308,6 +477,43 @@ describe('recording service', () => {
         expect(mockStopRecording).toHaveBeenCalled();
         expect(service.getState()).toBe('idle');
         expect(service.isRecording()).toBe(false);
+      });
+
+      it('should handle error during cancel gracefully', async () => {
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockStopRecording = jest.fn().mockImplementation(() => {
+          throw new Error('Cancel failed');
+        });
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: mockStopRecording } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording();
+        const result = await service.cancelRecording();
+
+        // Should still succeed (graceful handling)
+        expect(result.success).toBe(true);
+        expect(service.getState()).toBe('idle');
+        expect(mockConsoleError).toHaveBeenCalled();
+      });
+
+      it('should cancel gracefully when cameraRef becomes null', async () => {
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockStopRecording = jest.fn();
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: mockStopRecording } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording();
+
+        // Simulate cameraRef becoming null (e.g., component unmount)
+        mockRef.current = null as any;
+
+        const result = await service.cancelRecording();
+
+        // Should still succeed and reset state
+        expect(result.success).toBe(true);
+        expect(service.getState()).toBe('idle');
+        // stopRecording should NOT be called since cameraRef.current is null
+        expect(mockStopRecording).not.toHaveBeenCalled();
       });
     });
 
