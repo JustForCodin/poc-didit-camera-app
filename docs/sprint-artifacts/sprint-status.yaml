@@ -53,8 +53,8 @@ development_status:
 
   # Epic 2: Camera Capture & Recording
   epic-2: in-progress
-  2-1-camera-permission-handling: review
-  2-2-camera-preview-component: backlog
+  2-1-camera-permission-handling: done
+  2-2-camera-preview-component: done
   2-3-video-recording-service: backlog
   2-4-frame-capture-at-configurable-intervals: backlog
   2-5-dual-capture-mode-video-frames: backlog

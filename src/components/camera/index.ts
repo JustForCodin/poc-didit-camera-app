@@ -6,3 +6,4 @@
 
 export { PermissionRequest } from './PermissionRequest';
 export { PermissionDenied } from './PermissionDenied';
+export { CameraPreview, type CameraPreviewProps } from './CameraPreview';
