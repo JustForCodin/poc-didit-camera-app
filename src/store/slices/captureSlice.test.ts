@@ -39,29 +39,25 @@ describe('captureSlice', () => {
 
   const mockCapturedFrame: CapturedFrame = {
     frameIndex: 0,
-        capturedAt: '2025-01-01T00:00:00.000Z',
-        uri: 'file://frame1.jpg',
-    timestamp: '2025-01-01T00:00:00.000Z',
+    capturedAt: '2025-01-01T00:00:00.000Z',
+    uri: 'file://frame1.jpg',
   };
 
   const mockCapturedFrames: CapturedFrame[] = [
     {
       frameIndex: 0,
-        capturedAt: '2025-01-01T00:00:00.000Z',
-        uri: 'file://frame1.jpg',
-      timestamp: '2025-01-01T00:00:00.000Z',
+      capturedAt: '2025-01-01T00:00:00.000Z',
+      uri: 'file://frame1.jpg',
     },
     {
-      frameIndex: 0,
-        capturedAt: '2025-01-01T00:00:00.000Z',
-        uri: 'file://frame2.jpg',
-      timestamp: '2025-01-01T00:00:01.000Z',
+      frameIndex: 1,
+      capturedAt: '2025-01-01T00:00:01.000Z',
+      uri: 'file://frame2.jpg',
     },
     {
-      frameIndex: 0,
-        capturedAt: '2025-01-01T00:00:00.000Z',
-        uri: 'file://frame3.jpg',
-      timestamp: '2025-01-01T00:00:02.000Z',
+      frameIndex: 2,
+      capturedAt: '2025-01-01T00:00:02.000Z',
+      uri: 'file://frame3.jpg',
     },
   ];
 
@@ -195,10 +191,9 @@ describe('captureSlice', () => {
         frameCount: 1,
       };
       const newFrame: CapturedFrame = {
-        frameIndex: 0,
-        capturedAt: '2025-01-01T00:00:00.000Z',
+        frameIndex: 1,
+        capturedAt: '2025-01-01T00:00:01.000Z',
         uri: 'file://frame2.jpg',
-        timestamp: '2025-01-01T00:00:01.000Z',
       };
 
       const state = captureReducer(stateWithFrame, addCapturedFrame(newFrame));
