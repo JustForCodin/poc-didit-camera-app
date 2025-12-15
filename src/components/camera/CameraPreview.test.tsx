@@ -33,7 +33,9 @@ describe('CameraPreview', () => {
   describe('component structure', () => {
     it('should export CameraPreview component', () => {
       expect(CameraPreview).toBeDefined();
-      expect(typeof CameraPreview).toBe('function');
+      // forwardRef returns an object with $$typeof, not a plain function
+      expect(typeof CameraPreview).toBe('object');
+      expect((CameraPreview as any).$$typeof).toBeDefined();
     });
 
     it('should export CameraPreviewProps type', () => {

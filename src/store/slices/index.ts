@@ -20,6 +20,27 @@ export {
 
 export type { AuthState, AuthStatus } from './authSlice';
 
+export {
+  default as recordingReducer,
+  startRecordingRequest,
+  startRecordingSuccess,
+  updateDuration,
+  stopRecordingRequest,
+  stopRecordingSuccess,
+  setRecordingError,
+  resetRecording,
+  clearLastResult,
+  selectRecordingState,
+  selectIsRecording,
+  selectRecordingStartedAt,
+  selectRecordingDuration,
+  selectLastRecordingResult,
+  selectRecordingError,
+  selectRecordingIsLoading,
+} from './recordingSlice';
+
+export type { RecordingSliceState } from './recordingSlice';
+
 // Future slices will be added here:
 // export { default as sessionsReducer } from './sessionsSlice';
 // export { default as backendsReducer } from './backendsSlice';

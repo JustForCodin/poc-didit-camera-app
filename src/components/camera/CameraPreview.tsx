@@ -7,9 +7,10 @@
  * - Maintains proper aspect ratio (portrait orientation)
  * - Fills available space without distortion
  * - Memory-efficient lifecycle management
+ * - Forwards camera ref for recording/capture (via forwardRef)
  */
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { CameraView, CameraType } from 'expo-camera';
 import styled from 'styled-components/native';
@@ -28,26 +29,51 @@ export interface CameraPreviewProps {
 }
 
 /**
+ * Ref type exposed by CameraPreview
+ * Exposes the underlying CameraView for recording/capture operations
+ */
+export interface CameraPreviewRef {
+  /** Get the underlying CameraView ref for recording operations */
+  getCameraRef: () => React.RefObject<CameraView | null>;
+}
+
+/**
  * CameraPreview displays a live camera feed.
+ * Supports forwarding the camera ref for recording operations.
  *
  * @example
  * ```tsx
+ * const cameraPreviewRef = useRef<CameraPreviewRef>(null);
+ *
+ * // Get camera ref for recording
+ * const cameraRef = cameraPreviewRef.current?.getCameraRef();
+ *
  * <CameraPreview
+ *   ref={cameraPreviewRef}
  *   isActive={true}
  *   facing="back"
  *   onCameraReady={() => console.log('Camera ready')}
  * />
  * ```
  */
-export function CameraPreview({
-  isActive = true,
-  facing = 'back',
-  onCameraReady,
-  onMountError,
-  testID = 'camera-preview',
-}: CameraPreviewProps) {
-  // Camera ref for future frame capture (Story 2.4: Frame Capture at Configurable Intervals)
+export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
+  function CameraPreview(
+    {
+      isActive = true,
+      facing = 'back',
+      onCameraReady,
+      onMountError,
+      testID = 'camera-preview',
+    },
+    ref
+  ) {
+  // Camera ref for recording and frame capture
   const cameraRef = useRef<CameraView>(null);
+
+  // Expose camera ref to parent components
+  useImperativeHandle(ref, () => ({
+    getCameraRef: () => cameraRef,
+  }), []);
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -112,7 +138,7 @@ export function CameraPreview({
       )}
     </PreviewContainer>
   );
-}
+});
 
 const styles = StyleSheet.create({
   camera: {
