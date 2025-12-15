@@ -55,6 +55,36 @@ const DEFAULT_OPTIONS: Required<RecordingOptions> = {
 };
 
 /**
+ * Recording option constraints
+ */
+const OPTION_CONSTRAINTS = {
+  maxDuration: { min: 1, max: 3600 }, // 1 second to 1 hour
+  maxFileSize: { min: 0, max: 1024 * 1024 * 1024 * 2 }, // 0 to 2GB
+};
+
+/**
+ * Validate and sanitize recording options
+ * Clamps values to valid ranges and ensures positive numbers
+ */
+function validateRecordingOptions(options: RecordingOptions): Required<RecordingOptions> {
+  const merged = { ...DEFAULT_OPTIONS, ...options };
+
+  // Clamp maxDuration to valid range
+  merged.maxDuration = Math.max(
+    OPTION_CONSTRAINTS.maxDuration.min,
+    Math.min(OPTION_CONSTRAINTS.maxDuration.max, Math.floor(merged.maxDuration))
+  );
+
+  // Clamp maxFileSize to valid range (0 means no limit)
+  merged.maxFileSize = Math.max(
+    OPTION_CONSTRAINTS.maxFileSize.min,
+    Math.min(OPTION_CONSTRAINTS.maxFileSize.max, Math.floor(merged.maxFileSize))
+  );
+
+  return merged;
+}
+
+/**
  * Error messages for recording operations
  */
 export const RECORDING_ERROR_MESSAGES: Record<string, string> = {
@@ -129,15 +159,15 @@ export class VideoRecordingService {
 
     try {
       this.state = 'starting';
-      const mergedOptions = { ...DEFAULT_OPTIONS, ...options };
+      const validatedOptions = validateRecordingOptions(options);
 
       // Start recording - this returns a promise that resolves when recording stops
       this.startTime = new Date();
       const recordingOptions: { maxDuration?: number; maxFileSize?: number } = {
-        maxDuration: mergedOptions.maxDuration,
+        maxDuration: validatedOptions.maxDuration,
       };
-      if (mergedOptions.maxFileSize > 0) {
-        recordingOptions.maxFileSize = mergedOptions.maxFileSize;
+      if (validatedOptions.maxFileSize > 0) {
+        recordingOptions.maxFileSize = validatedOptions.maxFileSize;
       }
       this.recordingPromise = this.cameraRef.current.recordAsync(recordingOptions) as Promise<{ uri: string }>;
 

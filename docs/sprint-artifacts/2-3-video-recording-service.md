@@ -1,6 +1,6 @@
 # Story 2.3: Video Recording Service
 
-Status: review
+Status: done
 
 ## Story
 
@@ -304,9 +304,47 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `src/store/store.ts` - Added recording to rootReducer
 - `docs/sprint-artifacts/sprint-status.yaml` - Updated epic-1 to done, 1-6 to done, 2-3 to in-progress
 
+## Code Review
+
+### Review Date: 2025-12-15
+### Reviewer: Claude Opus 4.5 (Adversarial Code Review)
+
+**Review Result:** PASSED with fixes applied
+
+**Issues Found:** 0 Critical, 3 Medium, 2 Low
+
+### Issues Fixed:
+
+**M1: Missing Hook Tests (FIXED)**
+- Added `src/hooks/useRecording.test.ts` (13 tests)
+- Added `src/hooks/useAppStateRecording.test.ts` (11 tests)
+- Total tests now: 281 (was 253)
+
+**M2: CameraPreview Doesn't Expose cameraRef (FIXED)**
+- Added `forwardRef` to CameraPreview component
+- Added `CameraPreviewRef` interface with `getCameraRef()` method
+- Updated barrel export to include `CameraPreviewRef` type
+- Story 2.7 (Recording Controls UI) can now access camera ref
+
+**M3: No Input Validation for Recording Options (FIXED)**
+- Added `validateRecordingOptions()` function
+- Clamps `maxDuration` to 1-3600 seconds
+- Clamps `maxFileSize` to 0-2GB
+- Floors decimal values to integers
+- Added 4 validation tests
+
+### Low Issues (Documented, Not Fixed):
+- L1: Stale camera ref potential - edge case, monitoring
+- L2: Minor documentation gap - epics mention expo-av but implementation correctly uses expo-camera
+
+### Final Test Results:
+- TypeScript: Compiles with no errors
+- Tests: 281 passed, 0 failed (28 new tests added)
+
 ## Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
 | 2025-12-15 | Story created, implementation in progress | Claude Opus 4.5 |
 | 2025-12-15 | Implementation complete, all 253 tests passing, moved to review | Claude Opus 4.5 |
+| 2025-12-15 | Code review completed, 3 medium issues fixed, 28 tests added, status: done | Claude Opus 4.5 |

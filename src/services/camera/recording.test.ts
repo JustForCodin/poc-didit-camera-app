@@ -200,6 +200,47 @@ describe('recording service', () => {
         expect(mockRecordAsync).toHaveBeenCalledWith({ maxDuration: 60, maxFileSize: 5000000 });
       });
 
+      it('should clamp negative maxDuration to minimum', async () => {
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: jest.fn() } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording({ maxDuration: -100 });
+
+        expect(mockRecordAsync).toHaveBeenCalledWith({ maxDuration: 1 });
+      });
+
+      it('should clamp excessive maxDuration to maximum', async () => {
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: jest.fn() } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording({ maxDuration: 10000 });
+
+        expect(mockRecordAsync).toHaveBeenCalledWith({ maxDuration: 3600 });
+      });
+
+      it('should clamp negative maxFileSize to zero', async () => {
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: jest.fn() } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording({ maxFileSize: -1000 });
+
+        // maxFileSize 0 means no limit, so it should not be included in options
+        expect(mockRecordAsync).toHaveBeenCalledWith({ maxDuration: 300 });
+      });
+
+      it('should floor decimal values for options', async () => {
+        const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
+        const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: jest.fn() } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startRecording({ maxDuration: 60.7, maxFileSize: 1000.9 });
+
+        expect(mockRecordAsync).toHaveBeenCalledWith({ maxDuration: 60, maxFileSize: 1000 });
+      });
+
       it('should return error if already recording', async () => {
         const mockRecordAsync = jest.fn().mockResolvedValue({ uri: 'file://video.mp4' });
         const mockRef = { current: { recordAsync: mockRecordAsync, stopRecording: jest.fn() } };
