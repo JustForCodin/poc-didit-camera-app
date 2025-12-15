@@ -582,6 +582,26 @@ describe('capture service', () => {
         );
       });
 
+      it('should handle camera ref becoming null during capture', async () => {
+        const mockTakePicture = jest.fn().mockResolvedValue({ uri: 'file://frame.jpg' });
+        const mockRef = { current: { takePictureAsync: mockTakePicture } };
+        service.setCameraRef(mockRef as any);
+
+        await service.startCapture();
+
+        // Camera ref becomes null during interval
+        mockRef.current = null as any;
+
+        await advanceTimersAndFlush(1000);
+
+        // Should log error and not crash
+        expect(mockConsoleError).toHaveBeenCalledWith(
+          expect.stringContaining('Camera ref not available')
+        );
+        expect(service.getFrameCount()).toBe(0); // No frames captured
+        expect(service.isCapturing()).toBe(true); // Still trying to capture
+      });
+
       it('should handle error when start fails', async () => {
         const mockRef = { current: { takePictureAsync: jest.fn() } };
         service.setCameraRef(mockRef as any);
