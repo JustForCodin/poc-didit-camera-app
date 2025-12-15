@@ -8,7 +8,7 @@
  * Per architecture (AR9): Result<T> pattern for all async functions
  */
 
-import { supabase } from '@/utils/supabase';
+import { supabase, isSupabaseConfigured } from '@/utils/supabase';
 import type { Result } from '@/src/types/common';
 import type { Session, User, AuthError } from '@supabase/supabase-js';
 
@@ -48,6 +48,13 @@ function getAuthErrorMessage(error: AuthError | Error): string {
  */
 export async function initializeAuth(): Promise<Result<Session | null>> {
   try {
+    // If Supabase is not configured, return success with no session
+    // App will work in offline mode
+    if (!isSupabaseConfigured) {
+      console.log('Running in offline mode - Supabase not configured');
+      return { success: true, data: null };
+    }
+
     // Check for existing session first (handles returning users)
     const { data: sessionData, error: sessionError } =
       await supabase.auth.getSession();

@@ -120,7 +120,7 @@ export class FrameCaptureService {
   private cameraRef: React.RefObject<CameraView> | null = null;
   private state: CaptureState = 'idle';
   private startTime: Date | null = null;
-  private captureInterval: NodeJS.Timeout | null = null;
+  private captureInterval: ReturnType<typeof setInterval> | null = null;
   private frameCount: number = 0;
   private frames: CapturedFrame[] = [];
   private options: Required<CaptureOptions> = DEFAULT_OPTIONS;

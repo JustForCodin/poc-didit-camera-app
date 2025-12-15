@@ -34,6 +34,7 @@ jest.mock('@/utils/supabase', () => ({
       })),
     },
   },
+  isSupabaseConfigured: true, // Mock as configured for tests
 }));
 
 // Helper to create mock user
