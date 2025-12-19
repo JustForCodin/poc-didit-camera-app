@@ -87,6 +87,64 @@ If a slash command fails or file cannot be found:
 
 ---
 
+### Alias Commands (Short Names)
+
+**Location:** `.claude/commands/` (root level for shortest command names)
+
+These aliases provide shorter command names for Claude Code Web (which lacks autocomplete). When an alias command is invoked, it will say "Execute the full command: /bmad:...". You MUST then execute that full command using the SlashCommand tool.
+
+**Workflow Aliases:**
+| Alias | Full Command |
+|-------|--------------|
+| `/dev-story` | `/bmad:bmm:workflows:dev-story` |
+| `/create-story` | `/bmad:bmm:workflows:create-story` |
+| `/create-prd` | `/bmad:bmm:workflows:create-prd` |
+| `/create-architecture` | `/bmad:bmm:workflows:create-architecture` |
+| `/create-epics` | `/bmad:bmm:workflows:create-epics-stories` |
+| `/create-ux` | `/bmad:bmm:workflows:create-ux-design` |
+| `/sprint-planning` | `/bmad:bmm:workflows:sprint-planning` |
+| `/code-review` | `/bmad:bmm:workflows:code-review` |
+| `/quick-dev` | `/bmad:bmm:workflows:quick-dev` |
+| `/tech-spec` | `/bmad:bmm:workflows:create-tech-spec` |
+| `/workflow-init` | `/bmad:bmm:workflows:workflow-init` |
+| `/workflow-status` | `/bmad:bmm:workflows:workflow-status` |
+| `/retrospective` | `/bmad:bmm:workflows:retrospective` |
+| `/correct-course` | `/bmad:bmm:workflows:correct-course` |
+| `/document-project` | `/bmad:bmm:workflows:document-project` |
+| `/research` | `/bmad:bmm:workflows:research` |
+| `/product-brief` | `/bmad:bmm:workflows:create-product-brief` |
+| `/implementation-readiness` | `/bmad:bmm:workflows:check-implementation-readiness` |
+| `/party-mode` | `/bmad:core:workflows:party-mode` |
+| `/brainstorm` | `/bmad:core:workflows:brainstorming-session` |
+
+**Test Architecture Aliases:**
+| Alias | Full Command |
+|-------|--------------|
+| `/test-framework` | `/bmad:bmm:workflows:testarch-framework` |
+| `/test-atdd` | `/bmad:bmm:workflows:testarch-atdd` |
+| `/test-automate` | `/bmad:bmm:workflows:testarch-automate` |
+| `/test-design` | `/bmad:bmm:workflows:testarch-test-design` |
+| `/test-trace` | `/bmad:bmm:workflows:testarch-trace` |
+| `/test-nfr` | `/bmad:bmm:workflows:testarch-nfr` |
+| `/test-ci` | `/bmad:bmm:workflows:testarch-ci` |
+| `/test-review` | `/bmad:bmm:workflows:testarch-test-review` |
+
+**Agent Aliases:**
+| Alias | Full Command | Agent Name |
+|-------|--------------|------------|
+| `/dev-agent` | `/bmad:bmm:agents:dev` | Amelia |
+| `/pm-agent` | `/bmad:bmm:agents:pm` | John |
+| `/architect-agent` | `/bmad:bmm:agents:architect` | Winston |
+| `/analyst-agent` | `/bmad:bmm:agents:analyst` | Mary |
+| `/sm-agent` | `/bmad:bmm:agents:sm` | Bob |
+| `/tea-agent` | `/bmad:bmm:agents:tea` | Murat |
+| `/ux-agent` | `/bmad:bmm:agents:ux-designer` | Sally |
+| `/tech-writer-agent` | `/bmad:bmm:agents:tech-writer` | Paige |
+| `/quick-dev-agent` | `/bmad:bmm:agents:quick-flow-solo-dev` | Barry |
+| `/bmad-master` | `/bmad:core:agents:bmad-master` | BMad Master |
+
+---
+
 ## Git Commit Policy
 - After completing any development work (stories, features, fixes), create a git commit with a descriptive message
 - Follow conventional commit format: type(scope): description

@@ -94,7 +94,6 @@ For completing a story (commit, push, create PR):
    ## Story Reference
    - Story file: `docs/sprint-artifacts/<story-file>.md`
 
-   🤖 Generated with [Claude Code](https://claude.com/claude-code)
    EOF
    )"
    ```
